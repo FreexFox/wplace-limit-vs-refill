@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wplace Pixel Upgrade Calculator</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: #111;
+    color: #eee;
+    text-align: center;
+    padding: 20px;
+  }
+  h1 {
+    color: #ffcc00;
+  }
+  input {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 5px;
+    border: none;
+    font-size: 1rem;
+    width: 120px;
+    text-align: center;
+  }
+  button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #ff6600;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button:hover {
+    background-color: #ff8533;
+  }
+  .result {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    background-color: #222;
+    padding: 15px;
+    border-radius: 10px;
+    display: inline-block;
+    text-align: left;
+  }
+  canvas {
+    margin-top: 20px;
+    background-color: #222;
+    border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+<h1>Wplace Pixel Upgrade Calculator</h1>
+<p> <strong>+5 Limit</strong> or <strong>+30 Refill</strong>?</p>
+
+<label>Current Pixel Limit: <input type="number" id="limit" value="30"></label><br>
+<label>Minutes Between Sessions: <input type="number" id="freq" value="90"></label><br>
+<button onclick="calculate()">Calculate</button>
+
+<div id="output" class="result" style="display:none"></div>
+<canvas id="chart" width="300" height="150"></canvas>
+
+<script>
+const REGEN_PER_MIN = 2; // pixels per minute
+const REFILL_VALUE = 30; // pixels
+const LIMIT_INCREMENT = 5;
+
+function dailyWaste(freq, limit) {
+  let neededCap = REGEN_PER_MIN * freq;
+  let wastePerCycle = Math.max(0, neededCap - limit);
+  let cyclesPerDay = 1440 / freq;
+  return wastePerCycle * cyclesPerDay;
+}
+
+function dailyGainPlus5(freq, limit) {
+  let wasteNow = dailyWaste(freq, limit);
+  let wasteAfter = dailyWaste(freq, limit + LIMIT_INCREMENT);
+  return wasteNow - wasteAfter;
+}
+
+function daysToBreakeven(freq, limit) {
+  let gain = dailyGainPlus5(freq, limit);
+  if (gain <= 0) return Infinity;
+  return REFILL_VALUE / gain;
+}
+
+function calculate() {
+  let limit = parseInt(document.getElementById('limit').value);
+  let freq = parseInt(document.getElementById('freq').value);
+
+  let waste = dailyWaste(freq, limit);
+  let gain = dailyGainPlus5(freq, limit);
+  let be = daysToBreakeven(freq, limit);
+
+  let rec = (gain > 0 && be <= 7) ? 'Buy +5 Limit' : 'Buy +30 Refill';
+
+  document.getElementById('output').style.display = 'block';
+  document.getElementById('output').innerHTML = `
+    <strong>Results:</strong><br>
+    Wasted/day: ${waste.toFixed(1)} pixels<br>
+    Pixels/day gained from +5: ${gain.toFixed(1)}<br>
+    Days to match a +30 refill: ${be === Infinity ? '∞' : be.toFixed(2)}<br>
+    <strong>Recommendation:</strong> ${rec}
+  `;
+
+  drawChart(limit, freq);
+}
+
+function drawChart(limit, freq) {
+  let ctx = document.getElementById('chart').getContext('2d');
+  ctx.clearRect(0, 0, 300, 150);
+
+  ctx.strokeStyle = '#ffcc00';
+  ctx.beginPath();
+  for (let f = 15; f <= 360; f += 5) {
+    let be = daysToBreakeven(f, limit);
+    let y = Math.min(150, (be === Infinity ? 60 : be) * 2.5);
+    let x = (f / 360) * 300;
+    if (f === 15) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Days to breakeven vs login freq', 10, 140);
+}
+</script>
+</body>
+</html>
