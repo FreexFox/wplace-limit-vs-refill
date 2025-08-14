@@ -11,3 +11,8 @@ Runs entirely in your browser — no data collection, no ads, no nonsense.
   - Days until +5 limit matches a +30 refill
   - A clear recommendation
 - Includes a breakeven **chart** to visualize your play style
+
+[**View on GitHub Pages**](https://freexfox.github.io/wplace-limit-vs-refill/)
+
+
+*Built for Wplace players who want to spend droplets smarter.*
